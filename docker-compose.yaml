@@ -1,0 +1,17 @@
+services:
+  postgres:
+    container_name: eventostec_postgres
+    image: postgres
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_USER=eventostec
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=eventostec
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "1GB"
