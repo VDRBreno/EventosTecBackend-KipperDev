@@ -21,6 +21,9 @@ public class EventService {
     @Autowired
     private EventRepository eventRepository;
 
+    @Autowired
+    private AddressService addressService;
+
     public Event createEvent(EventRequestDTO data) {
         String imgUrl = null;
 
@@ -38,6 +41,10 @@ public class EventService {
 
         eventRepository.save(newEvent);
 
+        if(!data.remote()) {
+            this.addressService.createAddress(data, newEvent);
+        }
+
         return newEvent;
     }
 
@@ -49,12 +56,46 @@ public class EventService {
             event.getTitle(),
             event.getDescription(),
             event.getDate(),
-            "",
-            "",
+            event.getAddress() != null ? event.getAddress().getCity() : "",
+            event.getAddress() != null ? event.getAddress().getUf() : "",
             event.getRemote(),
             event.getEventUrl(),
             event.getImgUrl()
-        )).toList();
+        )).stream().toList();
+    }
+
+    public List<EventResponseDTO> getFilteredEvents(
+        int page,
+        int size,
+        String title,
+        String city,
+        String uf,
+        Date startDate,
+        Date endDate
+    ) {
+
+        Date currentDate = new Date();
+        Date futureDate = new Date();
+        futureDate.setTime(currentDate.getTime()+15_778_476_000L);
+        title = (title != null) ? title : "";
+        city = (city != null) ? city : "";
+        uf = (uf != null) ? uf : "";
+        startDate = (startDate != null) ? startDate : currentDate;
+        endDate = (endDate != null) ? endDate : futureDate;
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Event> eventsPages = this.eventRepository.findFilteredEvents(title, city, uf, startDate, endDate, pageable);
+        return eventsPages.map(event -> new EventResponseDTO(
+            event.getId(),
+            event.getTitle(),
+            event.getDescription(),
+            event.getDate(),
+            event.getAddress() != null ? event.getAddress().getCity() : "",
+            event.getAddress() != null ? event.getAddress().getUf() : "",
+            event.getRemote(),
+            event.getEventUrl(),
+            event.getImgUrl()
+        )).stream().toList();
     }
 
     // No projeto original é feito com conexão ao AWS S3, mas não usarei AWS, logo não haverá upload
